@@ -50,8 +50,10 @@ module.exports = function(options) {
   return async function cors(ctx, next) {
     // If the Origin header is not present terminate this set of steps.
     // The request is outside the scope of this specification.
+    // 跨域请求特征：请求中包含Origin头域，如果不包含则不是跨域
+    // 调用request的get方法获取头信息
     const requestOrigin = ctx.get('Origin');
-
+    console.log('origin-------', requestOrigin);
     // Always set Vary header
     // https://github.com/rs/cors/issues/10
     ctx.vary('Origin');
@@ -117,7 +119,7 @@ module.exports = function(options) {
         throw err;
       }
     } else {
-      // Preflight Request
+      // Preflight Request-CORS 预检请求 询问服务器是否支持某方法
 
       // If there is no Access-Control-Request-Method header or if parsing failed,
       // do not set any additional headers and terminate this set of steps.
