@@ -27,7 +27,7 @@ describe('cors.test.js', function() {
     it('should set `Access-Control-Allow-Origin` to request origin header', function(done) {
       request(app.listen())
         .get('/')
-        .set('Origin', 'http://koajs.com')
+        .set('Origin', 'http://koajs.com')// 这是设置请求头
         .expect('Access-Control-Allow-Origin', 'http://koajs.com')
         .expect({ foo: 'bar' })
         .expect(200, done);
@@ -167,6 +167,40 @@ describe('cors.test.js', function() {
     });
   });
 
+  describe('origin whitelist', function() {
+    const app = new Koa();
+    app.use(cors({
+      origin(ctx) { // 设置允许来自指定域名请求
+        const whiteList = [ 'http://koajs.com', 'http://localhost:8081' ]; // 可跨域白名单
+        const url = ctx.get('Origin');
+        if (whiteList.includes(url)) {
+          return url;
+        }
+        return 'http://localhost::3000'; // 默认允许本地请求3000端口可跨域
+      },
+    }));
+    app.use(function(ctx) {
+      ctx.body = { foo: 'bar' };
+    });
+
+    it('should disable cors', function(done) {
+      request(app.listen())
+        .get('/')
+        .set('Origin', 'http://koajs.com')// 这是设置请求头
+        .expect({ foo: 'bar' })
+        .expect(200, done);
+    });
+
+    it('should set access-control-allow-origin to *', function(done) {
+      request(app.listen())
+        .get('/test2222')
+        .set('Origin', 'http://koajs.com')
+        // .expect({ foo: 'bar' })
+        .expect('Access-Control-Allow-Origin', 'http://koajs.com')
+        .expect(200, done);
+    });
+  });
+
   describe('options.origin=async function', function() {
     const app = new Koa();
     app.use(cors({
@@ -273,7 +307,14 @@ describe('cors.test.js', function() {
         .expect('Access-Control-Max-Age', '3600')
         .expect(204, done);
     });
-
+    /**
+     * Access-Control-Max-Age是什么
+     * 浏览器的同源策略，就是出于安全考虑，浏览器会限制从脚本发起的跨域HTTP请求（比如异步请求GET, POST, PUT, DELETE, OPTIONS等等），所以浏览器会向所请求的服务器发起两次请求，第一次是浏览器使用OPTIONS方法发起一个预检请求，第二次才是真正的异步请求，第一次的预检请求获知服务器是否允许该跨域请求：如果允许，才发起第二次真实的请求；如果不允许，则拦截第二次请求。
+     * Access-Control-Max-Age用来指定本次预检请求的有效期，单位为秒，，在此期间不用发出另一条预检请求。
+     * 例如：
+     * resp.addHeader("Access-Control-Max-Age", "0")，表示每次异步请求都发起预检请求，也就是说，发送两次请求。
+     * resp.addHeader("Access-Control-Max-Age", "1800")，表示隔30分钟才发起预检请求。也就是说，发送两次请求
+     */
     it('should not set maxAge on simple request', function(done) {
       const app = new Koa();
       app.use(cors({
