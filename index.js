@@ -57,7 +57,7 @@ module.exports = function(options) {
     // Always set Vary header
     // https://github.com/rs/cors/issues/10
     ctx.vary('Origin');
-
+    // console.log('<<<<<<:', ctx.response.header);
     if (!requestOrigin) return await next();
 
     let origin;
